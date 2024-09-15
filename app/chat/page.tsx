@@ -1,26 +1,75 @@
 'use client'
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, FileText, Moon, Sun, Image as ImageIcon, Check, X } from 'lucide-react';
+import { Send, User, FileText, Moon, Sun, Image as ImageIcon, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "next-themes";
 import EmailList from '@/components/EmailList' // Adjust the import path as needed
+import SearchBar from '@/components/ui/searchbar';
+const fetch = require('node-fetch');
+const axios = require('axios');
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import Papa from 'papaparse';
+import mailman from '../../assets/mailman.png';
+
+const markdownCsvContent = `
+\`\`\`csv
+Name,Age,Occupation
+Alice,30,Engineer
+Bob,25,Designer
+Charlie,35,Manager
+\`\`\`
+`;
 
 interface Message {
     id: number;
-    content: string | { type: 'pdf' | 'image', url: string };
+    content: string | { type: 'pdf' | 'image' | 'markdown', url: string };
     sender: 'user' | 'ai';
     status?: 'sending' | 'error';
     requiresAction?: boolean;
 }
 
+interface Email {
+    id: string;
+    subject: string;
+}
 
+interface EnhancedChatInterfaceProps {
+    initialMessages?: Message[];
+    enableActionButtons?: boolean;
+}
 
 const handleEmailSelect = (id: string) => {
     console.log(`Email ${id} selected`);
     // Add logic to handle email selection, e.g., display email content in chat
 };
+
+const arrayToMarkdownTable = (array) => {
+    if (array.length === 0) return '';
+
+    // Add extra space around cell content for better separation
+    const headers = array[0].map(header => `| ${header} `).join('') + '|';
+    const separator = array[0].map(() => '| --- ').join('') + '|';
+    const rows = array.slice(1).map(row => row.map(cell => `| ${cell} `).join('') + '|').join('\n');
+    
+    // Add additional lines for better visual separation
+    const rowSeparator = array[1] ? `${array[0].map(() => '| --- ').join('')}|` : '';
+
+    return `${headers}\n${separator}\n${rowSeparator}\n${rows}`;
+};
+
+const handleMarkdownCsvContent = (markdownContent) => {
+    // Extract CSV content from the Markdown code block
+    const csvMatch = markdownContent.match(/```csv\n([\s\S]*?)\n```/);
+    if (!csvMatch) return null;
+
+    const csvContent = csvMatch[1].trim();
+    const parsedData = Papa.parse(csvContent, { header: false }).data;
+    const markdownTable = arrayToMarkdownTable(parsedData);
+    return markdownTable
+}
 
 const AIIcon = ({ isAnimated = false }: { isAnimated?: boolean }) => (
     <svg
@@ -64,13 +113,18 @@ const ImageViewer = ({ url }: { url: string }) => (
         <img src={url} alt="Shared image" className="max-w-full h-auto rounded-lg border border-primary/20" />
     </div>
 );
-interface EnhancedChatInterfaceProps {
-    initialMessages?: Message[];
-    enableActionButtons?: boolean;
-}
+
+const MarkdownViewer = ({ content }: { content: string }) => (
+    <div className="markdown-viewer mt-2 p-4 border border-primary/20 rounded-lg bg-white shadow-md">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {content}
+        </ReactMarkdown>
+    </div>
+);
+
 
 export default function EnhancedChatInterface({ initialMessages = [], enableActionButtons = true }: EnhancedChatInterfaceProps) {
-    const [messages, setMessages] = useState<Message[]>(initialMessages);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -82,6 +136,8 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
         { id: '3', subject: 'Important update regarding your subscription' },
         // Add more sample emails as needed
     ]);
+    const [filteredEmails, setFilteredEmails] = useState<Email[]>(emails);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true); // State to track sidebar visibility
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -121,6 +177,18 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                         requiresAction: enableActionButtons,
                         action: null
                     };
+                } else if (input.toLowerCase().includes('show table')) {
+                    const table = handleMarkdownCsvContent(markdownCsvContent)
+                    aiResponse = {
+                        id: Date.now() + 1,
+                        content: {
+                            type: 'markdown',
+                            url: table
+                        },
+                        sender: 'ai',
+                        requiresAction: enableActionButtons,
+                        action: null
+                    };
                 } else {
                     aiResponse = {
                         id: Date.now() + 1,
@@ -130,6 +198,10 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                         action: null
                     };
                 }
+
+                let utterance = new SpeechSynthesisUtterance(String(aiResponse.content));
+                speechSynthesis.speak(utterance);
+
                 setMessages(prev => [...prev, aiResponse]);
             } catch (error) {
                 setMessages(prev => [
@@ -139,6 +211,18 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
             } finally {
                 setIsTyping(false);
             }
+        }
+    };
+
+
+    const handleSearch = (query: string) => {
+        if (query.trim()) {
+            const filtered = emails.filter(email =>
+                email.subject.toLowerCase().includes(query.toLowerCase())
+            );
+            setFilteredEmails(filtered);
+        } else {
+            setFilteredEmails(emails); // Reset to all emails when search is cleared
         }
     };
 
@@ -155,9 +239,50 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
         setTheme(theme === 'dark' ? 'light' : 'dark');
     };
 
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen); // Toggle sidebar visibility
+    };
+    
+
     return (
-        <div className="flex w-full h-screen">
-            <EmailList emails={emails} onSelectEmail={handleEmailSelect} />
+        <div className="flex w-full h-screen relative">
+            {/* Sidebar with Search and Email List */}
+            <div
+                className={`transition-all duration-300 ${isSidebarOpen ? 'w-80' : 'w-0'} overflow-hidden bg-black text-white border-r border-white/20 flex flex-col`}
+            >
+                {isSidebarOpen && (
+                    <>
+                        {/* Heading and Toggle Icon */}
+                        <div className="flex items-center p-4 border-b border-white/20">
+                            <img src={mailman.src} alt="logo" className="w-8 h-8 mr-3"/>
+                            <h1 className="text-2xl font-bold flex-grow">MailMate</h1>
+                            <Button onClick={toggleSidebar} variant="ghost" size="icon" className="ml-2">
+                                {isSidebarOpen ? <ChevronLeft className="h-6 w-6" /> : <ChevronRight className="h-6 w-6" />}
+                            </Button>
+                        </div>
+    
+                        {/* Search Bar */}
+                        <SearchBar onSearch={handleSearch} />
+                        <ScrollArea className="flex-1">
+                            <EmailList emails={filteredEmails} onSelectEmail={handleEmailSelect} />
+                        </ScrollArea>
+                    </>
+                )}
+            </div>
+    
+            {/* Close Button */}
+            {!isSidebarOpen && (
+                <Button
+                    onClick={toggleSidebar}
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-4 left-4 z-10 bg-black text-white border border-white/20 shadow-lg"
+                >
+                    <ChevronRight className="h-6 w-6" />
+                </Button>
+            )}
+    
+            {/* Main Chat Interface */}
             <div className="flex flex-col flex-1">
                 <header className="bg-primary text-primary-foreground p-4 shadow-md">
                     <div className="flex justify-between items-center px-4">
@@ -167,14 +292,14 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                         </Button>
                     </div>
                 </header>
+    
                 <main className="flex flex-col flex-1 overflow-hidden bg-background">
                     <div className="flex-grow flex flex-col h-full px-4">
                         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
                             {messages.map((message) => (
                                 <div key={message.id} className="mb-4">
                                     <div
-                                        className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'
-                                            } animate-fadeIn`}
+                                        className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
                                     >
                                         {message.sender === 'ai' && (
                                             <div className="mr-2 mb-1">
@@ -182,10 +307,7 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                                             </div>
                                         )}
                                         <div
-                                            className={`p-3 rounded-lg max-w-[70%] shadow-md ${message.sender === 'user'
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'bg-secondary text-secondary-foreground'
-                                                }`}
+                                            className={`p-3 rounded-lg max-w-[70%] shadow-md ${message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
                                         >
                                             {typeof message.content === 'string' ? (
                                                 message.content
@@ -198,6 +320,10 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                                                 <div>
                                                     <ImageIcon className="h-6 w-6 mb-2" />
                                                     <ImageViewer url={message.content.url} />
+                                                </div>
+                                            ) : message.content.type === 'markdown' ? (
+                                                <div>
+                                                    <MarkdownViewer content={message.content.url} />
                                                 </div>
                                             ) : null}
                                         </div>
@@ -213,10 +339,7 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                                                 onClick={() => handleAction(message.id, 'accept')}
                                                 className={`mr-2 ${message.action === 'accept'
                                                     ? 'bg-green-500 hover:bg-green-600'
-                                                    : message.action === 'decline'
-                                                        ? 'bg-gray-400 hover:bg-gray-500 cursor-not-allowed'
-                                                        : 'bg-green-500 hover:bg-green-600'
-                                                    }`}
+                                                    : 'bg-green-500 hover:bg-green-600'}`}
                                                 disabled={message.action === 'decline'}
                                             >
                                                 <Check className="mr-2 h-4 w-4" /> Accept
@@ -225,10 +348,7 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                                                 onClick={() => handleAction(message.id, 'decline')}
                                                 className={`${message.action === 'decline'
                                                     ? 'bg-red-500 hover:bg-red-600'
-                                                    : message.action === 'accept'
-                                                        ? 'bg-gray-400 hover:bg-gray-500 cursor-not-allowed'
-                                                        : 'bg-red-500 hover:bg-red-600'
-                                                    }`}
+                                                    : 'bg-red-500 hover:bg-red-600'}`}
                                                 disabled={message.action === 'accept'}
                                             >
                                                 <X className="mr-2 h-4 w-4" /> Decline
@@ -248,6 +368,7 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                                 </div>
                             )}
                         </ScrollArea>
+    
                         <div className="p-4 border-t border-primary/20">
                             <div className="flex items-center">
                                 <Input

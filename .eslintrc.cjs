@@ -2,7 +2,7 @@ module.exports = {
   extends: [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended-type-checked",
-    "next/core-web-vitals",
+    ["next/babel","next/core-web-vitals"]
   ],
   ignorePatterns: [
     ".eslintrc.cjs",
