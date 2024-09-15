@@ -7,8 +7,6 @@ const data = [
   { name: 'Mar', value: 15000 },
   { name: 'Apr', value: 12780 },
   { name: 'May', value: 13600 },
-  { name: 'Jun', value: 14250 },
-  { name: 'Jul', value: 15890 },
 ];
 
 
@@ -26,9 +24,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const BeautifulLineGraph = () => {
   return (
-    <div className="w-full h-96 bg-white p-4 rounded-lg shadow-lg">
+    <div className="w-full h-48 bg-white p-4 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold text-gray-800 mb-4">Monthly Financials</h2>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="50%" height="50%">
         <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis 

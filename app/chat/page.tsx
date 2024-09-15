@@ -22,6 +22,7 @@ import EnhancedVisualFinancialWidget from '@/components/chat/finance';
 import startSpeechRecognition from '@/components/helpers/speechRecognition'
 import MultiFlightDisplay from '@/components/chat/multiple_flights';
 import Circle from '@/components/helpers/Circle';
+import Graph from '@/assets/graph.jpg'
 
 const markdownCsvContent = `
 \`\`\`csv
@@ -456,12 +457,12 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                             <div className="flex justify-between items-center px-4">
                                 {isSidebarOpen ? (
                                     <div>
-                                    <h1 className="text-2xl font-bold">AI Chat Assistant</h1>
+                                    <h1 className="text-2xl font-bold text-black">AI Chat Assistant</h1>
                                         <Circle />
                                     </div>
                                 ) : (
                                     <div>
-                                    <h1 className="text-2xl font-bold ml-16">AI Chat Assistant</h1>
+                                    <h1 className="text-2xl font-bold ml-16 text-black">AI Chat Assistant</h1>
                                         <Circle />
                                     </div>
                                 )}
@@ -488,10 +489,11 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                                                 /<flight>(.*?)<\/flight>/s.test(message.content) ? (
                                                     <div>
                                                         <FlightData data={message.content.match(/<flight>(.*?)<\/flight>/s)[1]} />
+                                                        
                                                     </div>
                                                 ) : /<graph>(.*?)<\/graph>/s.test(message.content) ? (
                                                     <div>
-                                                        <BeautifulLineGraph/>
+                                                        <img src={Graph.src} className='w-full h-full' />
                                                     </div>
                                                 ) : (
                                                     message.content
