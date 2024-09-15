@@ -2,14 +2,15 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const data = [
-  { name: 'Jan', value: 4000 },
-  { name: 'Feb', value: 3000 },
-  { name: 'Mar', value: 5000 },
-  { name: 'Apr', value: 2780 },
-  { name: 'May', value: 1890 },
-  { name: 'Jun', value: 2390 },
-  { name: 'Jul', value: 3490 },
+  { name: 'Jan', value: 12000 },
+  { name: 'Feb', value: 9800 },
+  { name: 'Mar', value: 15000 },
+  { name: 'Apr', value: 12780 },
+  { name: 'May', value: 13600 },
+  { name: 'Jun', value: 14250 },
+  { name: 'Jul', value: 15890 },
 ];
+
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -26,7 +27,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 const BeautifulLineGraph = () => {
   return (
     <div className="w-full h-96 bg-white p-4 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">Monthly Sales</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-4">Monthly Financials</h2>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />

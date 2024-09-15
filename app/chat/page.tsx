@@ -481,30 +481,35 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                                             </div>
                                         )}         
                                         <div
-                                            className={`p-3 rounded-lg max-w-[70%] shadow-md ${message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                                            className={`p-3 rounded-lg max-w-[70%] shadow-md ${message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+                                                }`}
                                         >
                                             {typeof message.content === 'string' ? (
-                                            /<flight>(.*?)<\/flight>/s.test(message.content) ? (
-                                                <div>
-                                                    <FlightData data={message.content.match(/<flight>(.*?)<\/flight>/s)[1]} />
-                                                </div>
-                                            ) : (
-                                                message.content
-                                            )
+                                                /<flight>(.*?)<\/flight>/s.test(message.content) ? (
+                                                    <div>
+                                                        <FlightData data={message.content.match(/<flight>(.*?)<\/flight>/s)[1]} />
+                                                    </div>
+                                                ) : /<graph>(.*?)<\/graph>/s.test(message.content) ? (
+                                                    <div>
+                                                        <BeautifulLineGraph/>
+                                                    </div>
+                                                ) : (
+                                                    message.content
+                                                )
                                             ) : message.content.type === 'pdf' ? (
                                                 <div>
                                                     <FileText className="h-6 w-6 mb-2" />
-                                                    <PDFDownloadButton name="" downloadUrl={pdfUrl} />
+                                                    <PDFDownloadButton name="" downloadUrl={message.content.url} />
                                                 </div>
                                             ) : message.content.type === 'image' ? (
-                                            <div>
-                                                <ImageIcon className="h-6 w-6 mb-2" />
-                                                <ImageViewer url={message.content.url} />
-                                            </div>
+                                                <div>
+                                                    <ImageIcon className="h-6 w-6 mb-2" />
+                                                    <ImageViewer url={message.content.url} />
+                                                </div>
                                             ) : message.content.type === 'markdown' ? (
-                                            <div>
-                                                <MarkdownViewer content={message.content.url} />
-                                            </div>
+                                                <div>
+                                                    <MarkdownViewer content={message.content.url} />
+                                                </div>
                                             ) : null}
                                         </div>
                                         {message.sender === 'user' && (
