@@ -13,7 +13,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
     };
 
     return (
-        <div className="p-4 border-b border-white/20 bg-gray-800 text-white">
+        <div className="p-4 text-white">
             <input
                 type="text"
                 value={searchQuery}
