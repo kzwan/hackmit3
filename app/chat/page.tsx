@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, FileText, Moon, Sun, Image as ImageIcon, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Send, User, FileText, Moon, Sun, Image as ImageIcon, Check, X, ChevronLeft, ChevronRight, Mic } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,7 +12,13 @@ const axios = require('axios');
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Papa from 'papaparse';
-import mailman from '../../assets/mailman.png';
+import logo from '../../assets/logohackmit.png';
+import FlightData from '@/components/chat/flight_data';
+import BeautifulLineGraph from '@/components/chat/graph'
+import EnhancedVisualFinancialWidget from '@/components/chat/finance';
+import startSpeechRecognition from '@/components/helpers/speechRecognition'
+import MultiFlightDisplay from '@/components/chat/multiple_flights';
+import Circle from '@/components/helpers/Circle';
 
 const markdownCsvContent = `
 \`\`\`csv
@@ -45,6 +51,7 @@ const handleEmailSelect = (id: string) => {
     console.log(`Email ${id} selected`);
     // Add logic to handle email selection, e.g., display email content in chat
 };
+
 
 const arrayToMarkdownTable = (array) => {
     if (array.length === 0) return '';
@@ -149,6 +156,12 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
         inputRef.current?.focus();
     }, []);
 
+    const handleSpeech = () => {
+        startSpeechRecognition(function (transcription) {
+            setInput(input + " " + transcription);
+        });
+    }
+
     const handleSend = async () => {
         if (input.trim()) {
             const newMessage: Message = { id: Date.now(), content: input, sender: 'user' };
@@ -245,25 +258,25 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
     
 
     return (
-        <div className="flex w-full h-screen relative">
+        <div className="flex w-full h-screen relative bg-[#131618] text-white">
             {/* Sidebar with Search and Email List */}
             <div
-                className={`transition-all duration-300 ${isSidebarOpen ? 'w-80' : 'w-0'} overflow-hidden bg-black text-white border-r border-white/20 flex flex-col`}
+                className={`transition-all duration-300 ${isSidebarOpen ? 'w-80' : 'w-0'} overflow-hidden bg-[#131618] text-white flex flex-col`}
             >
                 {isSidebarOpen && (
                     <>
                         {/* Heading and Toggle Icon */}
-                        <div className="flex items-center p-4 border-b border-white/20">
-                            <img src={mailman.src} alt="logo" className="w-8 h-8 mr-3"/>
-                            <h1 className="text-2xl font-bold flex-grow">MailMate</h1>
-                            <Button onClick={toggleSidebar} variant="ghost" size="icon" className="ml-2">
+                        <div className="flex items-center p-4 bg-[#131618] -mt-2">
+                            <img src={logo.src} alt="logo" className="w-36 h-36 -ml-8 object-cover -mt-0 -mb-12"/>
+                            <h1 className="text-3xl font-bold flex-grow -ml-10 -mt-4 -mb-16">Omen</h1>
+                            <Button onClick={toggleSidebar} variant="ghost" size="icon" className="ml-2 mt-12 border border-2 border-white bg-transparent hover:bg-white hover:text-black transition-all duration-300 ease-in-out">
                                 {isSidebarOpen ? <ChevronLeft className="h-6 w-6" /> : <ChevronRight className="h-6 w-6" />}
                             </Button>
                         </div>
     
                         {/* Search Bar */}
                         <SearchBar onSearch={handleSearch} />
-                        <ScrollArea className="flex-1">
+                        <ScrollArea className="flex-1 items-center align-center text-align">
                             <EmailList emails={filteredEmails} onSelectEmail={handleEmailSelect} />
                         </ScrollArea>
                     </>
@@ -276,26 +289,36 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                     onClick={toggleSidebar}
                     variant="ghost"
                     size="icon"
-                    className="absolute top-4 left-4 z-10 bg-black text-white border border-white/20 shadow-lg"
+                    className="absolute top-16 left-12 z-10 bg-[#131618] text-white border border-white/20 shadow-lg"
                 >
-                    <ChevronRight className="h-6 w-6" />
+                    <ChevronRight className="h-4 w-4" />
                 </Button>
             )}
     
             {/* Main Chat Interface */}
-            <div className="flex flex-col flex-1">
-                <header className="bg-primary text-primary-foreground p-4 shadow-md">
-                    <div className="flex justify-between items-center px-4">
-                        <h1 className="text-2xl font-bold">AI Chat Assistant</h1>
-                        <Button onClick={toggleTheme} variant="ghost" size="icon">
-                            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                        </Button>
-                    </div>
-                </header>
+            <div className="flex flex-col flex-1 bg-[#131618] h-[845px] mt-8 mr-4 overflow-y-auto">
     
-                <main className="flex flex-col flex-1 overflow-hidden bg-background">
-                    <div className="flex-grow flex flex-col h-full px-4">
-                        <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+                <main className="flex flex-col flex-1 overflow-y-auto bg-[#131618] h-60">
+                    <div className="flex-grow flex flex-col px-4 py-2">
+                        <ScrollArea className="flex-grow flex-1 p-4 bg-white rounded-lg overflow-y-auto shadow-lg" ref={scrollAreaRef}>
+                        <header className="text-primary-foreground text-black pb-6 pt-2 border-b mb-4">
+                            <div className="flex justify-between items-center px-4">
+                                {isSidebarOpen ? (
+                                    <div>
+                                    <h1 className="text-2xl font-bold">AI Chat Assistant</h1>
+                                        <Circle />
+                                    </div>
+                                ) : (
+                                    <div>
+                                    <h1 className="text-2xl font-bold ml-16">AI Chat Assistant</h1>
+                                        <Circle />
+                                    </div>
+                                )}
+                                <Button onClick={toggleTheme} variant="ghost" size="icon">
+                                    {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                                </Button>
+                            </div>
+                        </header>
                             {messages.map((message) => (
                                 <div key={message.id} className="mb-4">
                                     <div
@@ -305,26 +328,32 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                                             <div className="mr-2 mb-1">
                                                 <AIIcon />
                                             </div>
-                                        )}
+                                        )}         
                                         <div
                                             className={`p-3 rounded-lg max-w-[70%] shadow-md ${message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
                                         >
                                             {typeof message.content === 'string' ? (
+                                            /<flight>(.*?)<\/flight>/s.test(message.content) ? (
+                                                <div>
+                                                    <FlightData data={message.content.match(/<flight>(.*?)<\/flight>/s)[1]} />
+                                                </div>
+                                            ) : (
                                                 message.content
+                                            )
                                             ) : message.content.type === 'pdf' ? (
-                                                <div>
-                                                    <FileText className="h-6 w-6 mb-2" />
-                                                    <PDFViewer url={message.content.url} />
-                                                </div>
+                                            <div>
+                                                <FileText className="h-6 w-6 mb-2" />
+                                                <PDFViewer url={message.content.url} />
+                                            </div>
                                             ) : message.content.type === 'image' ? (
-                                                <div>
-                                                    <ImageIcon className="h-6 w-6 mb-2" />
-                                                    <ImageViewer url={message.content.url} />
-                                                </div>
+                                            <div>
+                                                <ImageIcon className="h-6 w-6 mb-2" />
+                                                <ImageViewer url={message.content.url} />
+                                            </div>
                                             ) : message.content.type === 'markdown' ? (
-                                                <div>
-                                                    <MarkdownViewer content={message.content.url} />
-                                                </div>
+                                            <div>
+                                                <MarkdownViewer content={message.content.url} />
+                                            </div>
                                             ) : null}
                                         </div>
                                         {message.sender === 'user' && (
@@ -369,7 +398,7 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                             )}
                         </ScrollArea>
     
-                        <div className="p-4 border-t border-primary/20">
+                        <div className="p-4 border-t border-primary/20 rounded-b-lg shadow-lg -mr-4 -ml-4 h-12">
                             <div className="flex items-center">
                                 <Input
                                     ref={inputRef}
@@ -378,10 +407,23 @@ export default function EnhancedChatInterface({ initialMessages = [], enableActi
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                                    className="flex-grow mr-2 bg-background border-primary/20"
+                                    className="h-12 text-lg mr-2 bg-background border-primary/20 text-black"
                                 />
-                                <Button onClick={handleSend} size="icon" disabled={isTyping || !input.trim()}>
-                                    <Send className="h-4 w-4" />
+                                <Button 
+                                    onClick={handleSpeech} 
+                                    size="icon" 
+                                    className="border border-white border-2 bg-transparent hover:bg-white hover:text-black transition-all duration-300 ease-in-out h-12 w-12 mr-2"
+                                >
+                                    <Mic className="h-6 w-6" />
+                                    <span className="sr-only">Mic</span>
+                                </Button>
+                                <Button 
+                                    onClick={handleSend} 
+                                    size="icon" 
+                                    disabled={isTyping || !input.trim()} 
+                                    className="border border-white border-2 bg-transparent hover:bg-white hover:text-black transition-all duration-300 ease-in-out h-12 w-12"
+                                >
+                                    <Send className="h-6 w-6" />
                                     <span className="sr-only">Send</span>
                                 </Button>
                             </div>

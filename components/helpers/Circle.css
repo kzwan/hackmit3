@@ -1,0 +1,53 @@
+.blobby-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #3498db;
+    border-radius: 50%;
+    animation: idleWobble 3s infinite ease-in-out;
+}
+
+/* Wavy animation on idle */
+@keyframes idleWobble {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    25% {
+        transform: translate(-50%, -50%) scale(1.05) skew(2deg, 2deg);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1) rotate(1deg);
+    }
+    75% {
+        transform: translate(-50%, -50%) scale(1.05) skew(-2deg, -2deg);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Blobby effect when speaking */
+.speaking {
+    animation: blobPulse 1.5s infinite ease-in-out;
+    background-color: #ff5733;
+}
+
+/* Blob effect during speaking */
+@keyframes blobPulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    25% {
+        transform: translate(-50%, -50%) scale(1.2) skew(3deg, 3deg);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.4) rotate(2deg);
+    }
+    75% {
+        transform: translate(-50%, -50%) scale(1.2) skew(-2deg, -2deg);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
